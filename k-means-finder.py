@@ -2,9 +2,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-df = pd.read_csv('data/data.csv')
+df = pd.read_csv('data/UCI_Credit_Card.csv')
 
-x = 1
+x = 8
 
 for i in range(2 * x, 2 * x + 2):
 	for j in range(len(list(df))):

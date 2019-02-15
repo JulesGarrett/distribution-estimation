@@ -81,7 +81,6 @@ def kmeans(file_name, x, y, k):
 
 	# construct a new matplotlib figure
 	plt.figure()
-	plt.gca().set_aspect('equal', adjustable='box')
 	plt.xlabel(x)
 	plt.ylabel(y)
 

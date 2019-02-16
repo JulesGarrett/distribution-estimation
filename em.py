@@ -2,10 +2,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 import numpy as np
-from scipy import linalg
 import random
 import copy
 import math
+
+from sklearn import mixture
 
 # seed RNG for reproducable results
 random.seed(1)
@@ -64,6 +65,10 @@ def em(file_name, x, y, k):
 	df = pd.read_csv(file_name)
 	data = np.column_stack((df[x], df[y]))
 
+	gmm = mixture.GaussianMixture(n_components=k, covariance_type="full")
+	gmm.fit(data)
+	print(gmm.means_.round(2))
+
 	# keep track of new and old centroid positions
 	centroids = []
 	old_centroids = []
@@ -111,9 +116,11 @@ def em(file_name, x, y, k):
 
 				centroids[i] = [(new_mean_x, new_std_dev_x), (new_mean_y, new_std_dev_y)]
 	
+	# Here, the algorithm has determined the clusters, now we just need to plot the results
 
 	# for each cluster
 	for i in range(k):
+
 		# get the points that belong to that cluster
 		points = list(zip(x_values[i], y_values[i]))
 
@@ -121,16 +128,18 @@ def em(file_name, x, y, k):
 		for point in points:
 			plt.scatter(point[0], point[1], c=colors[i])
 
+		# get ellipse position
+		x = centroids[i][0][0]
+		y = centroids[i][1][0]
 
-		# then draw ellipses, credit for this section goes to Jaime from stack overflow
+		print(x.round(2))
+		print(y.round(2))
+
+		# get ellipse size and angle, credit for these 6 lines goes to Jaime from stack overflow
 		# (source: https://stackoverflow.com/questions/20126061/creating-a-confidence-ellipses-in-a-sccatterplot-using-matplotlib)
 		cov = np.cov(x_values[i], y_values[i])
 		lambda_, v = np.linalg.eig(cov)
 		lambda_ = np.sqrt(lambda_)
-
-		# get ellipse parameters
-		x = centroids[i][0][0]
-		y = centroids[i][1][0]
 		width = lambda_[0] * 2 * (i + 1)
 		height = lambda_[1] * 2 * (i + 1)
 		angle = math.degrees(math.acos(v[0, 0]))
@@ -140,6 +149,6 @@ def em(file_name, x, y, k):
 
 		# put ellipse on plot
 		e.set_clip_box(a.bbox)
-		e.set_alpha(0.4)
+		e.set_alpha(0.25)
 		e.set_facecolor(colors[i])
 		a.add_artist(e)

@@ -7,11 +7,11 @@ x_axis = 'PetalLengthCm'
 y_axis = 'SepalWidthCm'
 em.em(file_path, x_axis, y_axis, 2)
 
-# # generate k-means cluster plot for 2nd data set
-# file_path = 'data/auto-mpg.csv'
-# x_axis = 'weight'
-# y_axis = 'acceleration'
-# em.em(file_path, x_axis, y_axis, 3)
+# generate k-means cluster plot for 2nd data set
+file_path = 'data/winequality-red.csv'
+x_axis = 'citric acid'
+y_axis = 'volatile acidity'
+em.em(file_path, x_axis, y_axis, 2)
 
 # show both plots
 plt.show()

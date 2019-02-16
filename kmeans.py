@@ -1,8 +1,10 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import scipy.stats as stats
 import numpy as np
 import random
 import copy
+import math
 
 # seed RNG for reproducable results
 random.seed(1)
@@ -22,6 +24,19 @@ def distance(a, b):
 	return ((b[0] - a[0]) ** 2) + ((b[1] - a[1]) ** 2)
 
 
+def gauss_prob_2d(gauss2d, point):
+	x_mean = gauss2d[0][0]
+	x_std_dev = gauss2d[0][1]
+
+	y_mean = gauss2d[1][0]
+	y_std_dev = gauss2d[1][1]
+
+	x_portion = ((point[0] - x_mean) ** 2) / (2 * (x_std_dev ** 2))
+	y_portion = ((point[1] - y_mean) ** 2) / (2 * (y_std_dev ** 2))
+
+	return math.exp(-(x_portion + y_portion))
+
+
 # produces random points within pandas DataFrame to use as
 # initial centroid positions
 def random_point(data):
@@ -38,6 +53,25 @@ def random_point(data):
 
 	return [random_x, random_y]
 
+
+def random_gaussian(data):
+
+	# get data range
+	min_x = min(data[:,0])
+	max_x = max(data[:,0])
+	min_y = min(data[:,1])
+	max_y = max(data[:,1])
+
+	# pick random mean values
+	random_mean_x = random.uniform(min_x, max_x)
+	random_mean_y = random.uniform(min_y, max_y)
+
+	# pick random standard deviation values
+	random_std_dev_x = random.uniform(min_x, max_x) / 2
+	random_std_dev_y = random.uniform(min_y, max_y) / 2
+
+	# return random 2d gaussian stats
+	return [(random_mean_x, random_std_dev_x), (random_mean_y, random_std_dev_y)]
 
 # determines if any significant change was made in the
 # position of the centroids
@@ -79,7 +113,8 @@ def kmeans(file_name, x, y, k):
 
 	# give centroids random initial positions
 	for i in range(k):
-		centroids.append(random_point(data))
+		#centroids.append(random_point(data))
+		centroids.append(random_gaussian(data))
 
 	# construct a new matplotlib figure
 	plt.figure()
@@ -87,37 +122,64 @@ def kmeans(file_name, x, y, k):
 	plt.ylabel(y)
 
 	# loop until centroids stop moving
-	while centroids_were_updated(centroids, old_centroids):
+	# while centroids_were_updated(centroids, old_centroids):
+	while centroids != old_centroids:
 
-		# stats used for updating centroids
-		x_totals = np.zeros(k)
-		y_totals = np.zeros(k)
-		counts = np.zeros(k)
-		distances = np.zeros(k)
+		# # stats used for updating centroids
+		# x_totals = np.zeros(k)
+		# y_totals = np.zeros(k)
+		# counts = np.zeros(k)
+		# distances = np.zeros(k)
+
+		# store points values instead of sums to calculate variance
+		x_values = [[] for i in range(k)]
+		y_values = [[] for i in range(k)]
+		probabilities = np.zeros(k)
 
 		# iterate through every point in the scatter plot
 		for i in data:
 
-			# find the nearest centroid to that point
+			# # find the nearest centroid to that point
+			# for j in range(k):
+			# 	distances[j] = distance(i, centroids[j])
+			# closest_centroid = np.argmin(distances)
+
+			# find probability that that point comes from each gaussian
 			for j in range(k):
-				distances[j] = distance(i, centroids[j])
-			closest_centroid = np.argmin(distances)
+				probabilities[j] = gauss_prob_2d(centroids[j], i)
+			most_likely_centroid = np.argmax(probabilities)
+
 
 			# record stats about that point and make it the color
 			# of its nearest centroid
-			x_totals[closest_centroid] += i[0]
-			y_totals[closest_centroid] += i[1]
-			counts[closest_centroid] += 1
-			plt.scatter(i[0], i[1], c=colors[closest_centroid])
+			# x_totals[closest_centroid] += i[0]
+			# y_totals[closest_centroid] += i[1]
+			# counts[closest_centroid] += 1
+			# plt.scatter(i[0], i[1], c=colors[closest_centroid])
+
+			x_values[most_likely_centroid].append(i[0])
+			y_values[most_likely_centroid].append(i[1])
+			plt.scatter(i[0], i[1], c=colors[most_likely_centroid])
 
 		# remember where the centroids used to be
 		old_centroids = copy.deepcopy(centroids)
 
 		# update centroid positions
+		# for j in range(k):
+		# 	if counts[j] != 0:
+		# 		centroids[j] = [x_totals[j] / counts[j], y_totals[j] / counts[j]]
+
+		# update centroid positions
 		for j in range(k):
-			if counts[j] != 0:
-				centroids[j] = [x_totals[j] / counts[j], y_totals[j] / counts[j]]
+			if x_values[j] != 0:
+				new_mean_x = np.mean(x_values[j])
+				new_mean_y = np.mean(y_values[j])
+
+				new_std_dev_x = np.std(x_values[j])
+				new_std_dev_y = np.std(y_values[j])
+
+				centroids[j] = [(new_mean_x, new_std_dev_x), (new_mean_y, new_std_dev_y)]
 	
-	# plot centroids
-	for i in range(k):
-		plt.scatter(centroids[i][0], centroids[i][1], s=150, c=colors[i], marker='X', edgecolors='k')
+	# # plot centroids
+	# for i in range(k):
+	# 	plt.scatter(centroids[i][0], centroids[i][1], s=150, c=colors[i], marker='X', edgecolors='k')

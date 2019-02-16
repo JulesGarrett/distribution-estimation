@@ -15,7 +15,6 @@ colors = ['r', 'b', 'g', 'c', 'm', 'y']
 # the faster and less accurate the algorithm
 percent_change_minimum = 0.03
 
-
 # returns the Euclidean distance between the two given points.
 # parameters a and b are 1 by 2 arrays representing points on
 # the Cartesian plane
@@ -57,11 +56,14 @@ def centroids_were_updated(centroids, old_centroids):
 	return False
 
 
-# k-means clustering algorithm
+# k-means clustering algorithm, generates matplotlib figure plotting clusters
 # file: path to csv file containing data
+# x: column name from csv file to plot on x-axis
+# y: column name from csv file to plot on y-axis
+# k: number of clusters to make (must be between 1 and 6 inclusive)
 def kmeans(file_name, x, y, k):
 
-	# check if given value of k is valid
+	# check if given value of clusters is supportable
 	if k > 6 or k < 1:
 		print('Error: number of clusters must be between 1 and 6 inclusive')
 		print('Given number of clusters: ' + str(k))
@@ -84,6 +86,7 @@ def kmeans(file_name, x, y, k):
 	plt.xlabel(x)
 	plt.ylabel(y)
 
+	# loop until centroids stop moving
 	while centroids_were_updated(centroids, old_centroids):
 
 		# stats used for updating centroids

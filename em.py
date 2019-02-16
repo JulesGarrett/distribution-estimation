@@ -6,8 +6,6 @@ import random
 import copy
 import math
 
-from sklearn import mixture
-
 # seed RNG for reproducable results
 random.seed(1)
 
@@ -15,6 +13,10 @@ random.seed(1)
 colors = ['r', 'b', 'g', 'c', 'm', 'y']
 
 
+# calculates the probability that a given point belongs to a given 2d gaussian distribution
+# gauss2d: parameters describing a 2d gaussian distribution [(x_mean, x_std_dev), (y_mean, y_std_dev)]
+# point: 2d point on Cartesian plane (x, y)
+# return: https://wikimedia.org/api/rest_v1/media/math/render/svg/32a8040ca1ef2b9e0ffa5664326ac4a150f91cea (where A = 1)
 def gauss_prob_2d(gauss2d, point):
 	x_mean = gauss2d[0][0]
 	x_std_dev = gauss2d[0][1]
@@ -25,9 +27,13 @@ def gauss_prob_2d(gauss2d, point):
 	x_portion = ((point[0] - x_mean) ** 2) / (2 * (x_std_dev ** 2))
 	y_portion = ((point[1] - y_mean) ** 2) / (2 * (y_std_dev ** 2))
 
+	# note: not normalized
 	return math.exp(-(x_portion + y_portion))
 
 
+# generates random gaussian parameters
+# data: set of data points to run EM algorithm on
+# return: 2d gaussian parameters in the format: [(x_mean, x_std_dev), (y_mean, y_std_dev)]
 def random_gaussian(data):
 
 	# get data range
@@ -49,13 +55,13 @@ def random_gaussian(data):
 
 
 # expectation-maximization clustering algorithm, generates matplotlib figure plotting clusters
-# file: path to csv file containing data
+# file_name: path to csv file containing data
 # x: column name from csv file to plot on x-axis
 # y: column name from csv file to plot on y-axis
 # k: number of clusters to make (must be between 1 and 6 inclusive)
 def em(file_name, x, y, k):
 
-	# check if given value of clusters is supportable
+	# check if given value of clusters is supportable (based on number of colors we have declared)
 	if k > 6 or k < 1:
 		print('Error: number of clusters must be between 1 and 6 inclusive')
 		print('Given number of clusters: ' + str(k))
@@ -65,36 +71,32 @@ def em(file_name, x, y, k):
 	df = pd.read_csv(file_name)
 	data = np.column_stack((df[x], df[y]))
 
-	gmm = mixture.GaussianMixture(n_components=k, covariance_type="full")
-	gmm.fit(data)
-	print(gmm.means_.round(2))
-
 	# keep track of new and old centroid positions
 	centroids = []
 	old_centroids = []
 
-	# give centroids random initial positions
+	# give centroids random initial positions and variances
 	for i in range(k):
 		centroids.append(random_gaussian(data))
 
-	# construct a new matplotlib figure
+	# instantiate a new matplotlib figure
 	plt.figure()
 	a = plt.subplot()
 	plt.xlabel(x)
 	plt.ylabel(y)
 
-	# loop until centroids stop moving
-	while centroids != old_centroids: #	TODO: reimplement percentage based check
+	# loop until centroids stop changing
+	while centroids != old_centroids:
 
-		# store points values instead of sums to calculate variance
+		# keep statistics on points to update centroids
 		x_values = [[] for i in range(k)]
 		y_values = [[] for i in range(k)]
 		probabilities = np.zeros(k)
 
-		# iterate through every point in the scatter plot
+		# iterate through every point
 		for i in data:
 
-			# find probability that that point comes from each gaussian
+			# find gaussian that each point most likely belongs to (also known as the E-step)
 			for j in range(k):
 				probabilities[j] = gauss_prob_2d(centroids[j], i)
 			most_likely_centroid = np.argmax(probabilities)
@@ -105,7 +107,7 @@ def em(file_name, x, y, k):
 		# remember where the centroids used to be
 		old_centroids = copy.deepcopy(centroids)
 
-		# update centroid positions
+		# update centroid positions (also known as the M-step)
 		for i in range(k):
 			if x_values[i] != 0:
 				new_mean_x = np.mean(x_values[i])
@@ -132,10 +134,7 @@ def em(file_name, x, y, k):
 		x = centroids[i][0][0]
 		y = centroids[i][1][0]
 
-		print(x.round(2))
-		print(y.round(2))
-
-		# get ellipse size and angle, credit for these 6 lines goes to Jaime from stack overflow
+		# get ellipse size and angle, credit for these 6 lines goes to Jaime on stack overflow
 		# (source: https://stackoverflow.com/questions/20126061/creating-a-confidence-ellipses-in-a-sccatterplot-using-matplotlib)
 		cov = np.cov(x_values[i], y_values[i])
 		lambda_, v = np.linalg.eig(cov)
@@ -144,10 +143,10 @@ def em(file_name, x, y, k):
 		height = lambda_[1] * 2 * (i + 1)
 		angle = math.degrees(math.acos(v[0, 0]))
 
-		# create ellipse object
+		# instantiate ellipse object
 		e = Ellipse((x, y), width, height, angle)
 
-		# put ellipse on plot
+		# add ellipse to figure
 		e.set_clip_box(a.bbox)
 		e.set_alpha(0.25)
 		e.set_facecolor(colors[i])

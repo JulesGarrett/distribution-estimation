@@ -1,17 +1,26 @@
 import em
 import matplotlib.pyplot as plt
 
-# generate k-means cluster plot for 1st data set
+print('Generating plot for first data set... \t', end='', flush=True)
+
+# generate EM cluster plot for 1st data set
 file_path = 'data/iris_flowers.csv'
 x_axis = 'PetalLengthCm'
 y_axis = 'SepalWidthCm'
-em.em(file_path, x_axis, y_axis, 2)
+n_clusters = 2
+em.em(file_path, x_axis, y_axis, n_clusters)
 
-# generate k-means cluster plot for 2nd data set
+print('first plot generated')
+print('Generating plot for second data set... \t', end='', flush=True)
+
+# generate EM cluster plot for 2nd data set
 file_path = 'data/winequality-red.csv'
 x_axis = 'citric acid'
 y_axis = 'volatile acidity'
-em.em(file_path, x_axis, y_axis, 2)
+n_clusters = 2
+em.em(file_path, x_axis, y_axis, n_clusters)
+
+print('second plot generated')
 
 # show both plots
 plt.show()
